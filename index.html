@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>중등 영단어 마스터 (Spaced Practice)</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --primary-hover: #357abd;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f1c40f;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+        }
+
+        body {
+            font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 600px;
+            min-height: 550px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 30px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        h1, h2 { text-align: center; margin-top: 0; }
+        .text-center { text-align: center; }
+
+        .view {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+        }
+
+        .view.active { display: flex; }
+
+        /* Buttons */
+        button {
+            border: none;
+            border-radius: 10px;
+            padding: 15px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 8px;
+            width: 80%;
+            max-width: 300px;
+        }
+
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-back { background-color: #95a5a6; color: white; width: auto; padding: 10px 20px; margin-top: 20px; }
+        .btn-reset { background-color: transparent; color: #bdc3c7; border: 1px solid #bdc3c7; padding: 5px 10px; font-size: 12px; margin-top: 30px; width: auto;}
+
+        /* Leitner Dashboard */
+        .dashboard {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin: 20px 0;
+            padding: 15px;
+            background: #ecf0f1;
+            border-radius: 15px;
+            box-sizing: border-box;
+        }
+
+        .box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 18%;
+        }
+
+        .box-level { font-size: 12px; font-weight: bold; color: #7f8c8d; margin-bottom: 5px; }
+        .box-count {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 16px; color: white;
+        }
+
+        .lv1 { background-color: #e74c3c; } /* 씨앗 */
+        .lv2 { background-color: #e67e22; } /* 새싹 */
+        .lv3 { background-color: #f1c40f; } /* 줄기 */
+        .lv4 { background-color: #3498db; } /* 잎 */
+        .lv5 { background-color: #2ecc71; } /* 열매 */
+
+        .due-notice {
+            background-color: #ffeaa7;
+            color: #d35400;
+            padding: 10px;
+            border-radius: 10px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        /* Flashcard Mode */
+        .flashcard {
+            width: 100%; max-width: 400px; height: 250px;
+            perspective: 1000px; cursor: pointer; margin-bottom: 20px;
+        }
+
+        .flashcard-inner {
+            width: 100%; height: 100%;
+            transition: transform 0.6s; transform-style: preserve-3d;
+            position: relative;
+        }
+
+        .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+
+        .flashcard-front, .flashcard-back {
+            width: 100%; height: 100%; position: absolute;
+            backface-visibility: hidden; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            font-size: 32px; font-weight: bold; border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .level-badge {
+            font-size: 14px; position: absolute; top: 15px; right: 15px;
+            padding: 5px 10px; border-radius: 10px; background: rgba(255,255,255,0.3);
+        }
+
+        .flashcard-front { background-color: var(--primary); color: white; }
+        .flashcard-back { background-color: var(--success); color: white; transform: rotateY(180deg); }
+        .card-controls { display: flex; justify-content: space-between; width: 100%; max-width: 400px; }
+        .card-controls button { width: 45%; margin: 0; }
+        .progress-text { margin-bottom: 20px; font-size: 18px; font-weight: bold; color: #7f8c8d; }
+
+        /* Matching Game */
+        .match-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+            width: 100%; margin-bottom: 20px;
+        }
+        .match-btn {
+            background-color: #ecf0f1; color: var(--text-main);
+            padding: 15px 10px; width: 100%; margin: 0; font-size: 15px;
+        }
+        .match-btn.selected { background-color: var(--warning); color: white; }
+        .match-btn.matched { background-color: var(--success); color: white; visibility: hidden; }
+
+        /* Test Mode */
+        .test-container { width: 100%; max-width: 400px; text-align: center; }
+        .test-question { font-size: 28px; font-weight: bold; margin-bottom: 20px; color: var(--primary); }
+        .test-input {
+            width: 100%; padding: 15px; font-size: 20px;
+            border: 2px solid #bdc3c7; border-radius: 10px; box-sizing: border-box;
+            margin-bottom: 15px; text-align: center;
+        }
+        .test-input:focus { outline: none; border-color: var(--primary); }
+        
+        .feedback { font-size: 16px; font-weight: bold; min-height: 24px; margin-bottom: 15px; }
+        .hint-text { color: #e67e22; }
+        .correct-text { color: var(--success); }
+        .wrong-text { color: var(--danger); }
+        
+        .dynamic-queue-notice { font-size: 13px; color: var(--danger); margin-top: 10px; display: none; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 메인 메뉴 -->
+    <div id="menu-view" class="view active">
+        <h1>영단어 마스터 🚀</h1>
+        
+        <div class="dashboard">
+            <div class="box"><div class="box-level">LV.1 씨앗</div><div class="box-count lv1" id="count-lv1">0</div></div>
+            <div class="box"><div class="box-level">LV.2 새싹</div><div class="box-count lv2" id="count-lv2">0</div></div>
+            <div class="box"><div class="box-level">LV.3 줄기</div><div class="box-count lv3" id="count-lv3">0</div></div>
+            <div class="box"><div class="box-level">LV.4 잎</div><div class="box-count lv4" id="count-lv4">0</div></div>
+            <div class="box"><div class="box-level">LV.5 열매</div><div class="box-count lv5" id="count-lv5">0</div></div>
+        </div>
+
+        <div class="due-notice" id="due-notice">
+            오늘 복습해야 할 단어가 <span id="due-count">0</span>개 있습니다!
+        </div>
+
+        <button class="btn-success" onclick="startTest()">🔥 오늘의 복습 테스트 시작 🔥</button>
+        <button class="btn-primary" onclick="startFlashcards()">자유 학습 (플래시카드)</button>
+        <button class="btn-primary" onclick="startMatching()">자유 복습 (짝 맞추기)</button>
+        
+        <button class="btn-reset" onclick="resetData()">학습 데이터 초기화</button>
+    </div>
+
+    <!-- 1. 플래시카드 뷰 -->
+    <div id="flashcard-view" class="view">
+        <h2>플래시카드 (전체 단어)</h2>
+        <div class="progress-text" id="fc-progress">1 / 20</div>
+        
+        <div class="flashcard" onclick="flipCard()">
+            <div class="flashcard-inner" id="fc-inner">
+                <div class="flashcard-front" id="fc-front">
+                    <span class="level-badge" id="fc-badge-front">LV.1</span>
+                    <span id="fc-word">word</span>
+                </div>
+                <div class="flashcard-back" id="fc-back">
+                    <span class="level-badge" id="fc-badge-back">LV.1</span>
+                    <span id="fc-meaning">단어</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-controls">
+            <button class="btn-primary" onclick="prevCard()">이전</button>
+            <button class="btn-primary" onclick="nextCard()">다음</button>
+        </div>
+        <button class="btn-back" onclick="showMenu()">메인으로 돌아가기</button>
+    </div>
+
+    <!-- 2. 짝맞추기 뷰 -->
+    <div id="match-view" class="view">
+        <h2>짝 맞추기 게임</h2>
+        <p class="text-center" style="margin-bottom:15px; font-size: 14px;">영단어와 알맞은 뜻을 선택하세요!<br>(5단어씩 진행됩니다)</p>
+        <div class="match-grid" id="match-grid"></div>
+        <button class="btn-primary" id="match-next-btn" style="display:none;" onclick="nextMatchRound()">다음 라운드</button>
+        <button class="btn-back" onclick="showMenu()">메인으로 돌아가기</button>
+    </div>
+
+    <!-- 3. 테스트 뷰 -->
+    <div id="test-view" class="view">
+        <h2>오늘의 복습 테스트</h2>
+        <div class="progress-text" id="test-progress">남은 단어: 0개</div>
+        
+        <div class="test-container">
+            <div class="test-question" id="test-question">뜻</div>
+            <div class="feedback" id="test-feedback"></div>
+            <input type="text" class="test-input" id="test-input" placeholder="영단어를 입력하세요" autocomplete="off" onkeypress="handleTestEnter(event)">
+            <button class="btn-primary" style="width: 100%; max-width: none;" onclick="checkAnswer()">확인</button>
+            <div class="dynamic-queue-notice" id="dynamic-notice">💡 틀린 단어는 세션 뒤쪽에 다시 등장합니다!</div>
+        </div>
+        <button class="btn-back" onclick="showMenu()">저장하고 메인으로</button>
+    </div>
+    
+    <!-- 테스트 결과 뷰 -->
+    <div id="result-view" class="view">
+        <h2>오늘의 복습 완료! 🎉</h2>
+        <h1 style="color: var(--success); font-size: 48px;">완벽해요!</h1>
+        <p>단어들의 레벨이 상승하고 다음 복습일이 설정되었습니다.</p>
+        <button class="btn-primary" onclick="showMenu()">메인으로 돌아가기</button>
+    </div>
+</div>
+
+<script>
+    // 기본 영단어 데이터 20개
+    const baseWordList = [
+        { id: 1, en: "absolute", ko: "절대적인" },
+        { id: 2, en: "biology", ko: "생물학" },
+        { id: 3, en: "capacity", ko: "능력, 용량" },
+        { id: 4, en: "decade", ko: "10년" },
+        { id: 5, en: "evidence", ko: "증거" },
+        { id: 6, en: "frequent", ko: "빈번한" },
+        { id: 7, en: "generate", ko: "발생시키다" },
+        { id: 8, en: "hesitate", ko: "주저하다" },
+        { id: 9, en: "initial", ko: "처음의" },
+        { id: 10, en: "justify", ko: "정당화하다" },
+        { id: 11, en: "knowledge", ko: "지식" },
+        { id: 12, en: "logical", ko: "논리적인" },
+        { id: 13, en: "maintain", ko: "유지하다" },
+        { id: 14, en: "negative", ko: "부정적인" },
+        { id: 15, en: "observe", ko: "관찰하다" },
+        { id: 16, en: "patience", ko: "인내심" },
+        { id: 17, en: "qualify", ko: "자격을 얻다" },
+        { id: 18, en: "resource", ko: "자원" },
+        { id: 19, en: "strategy", ko: "전략" },
+        { id: 20, en: "temporary", ko: "일시적인" }
+    ];
+
+    // 레벨별 복습 주기 (일 단위)
+    // LV1: 당일(0), LV2: 1일 뒤, LV3: 3일 뒤, LV4: 7일 뒤, LV5: 14일 뒤(마스터)
+    const reviewIntervals = { 1: 0, 2: 1, 3: 3, 4: 7, 5: 14 };
+
+    let vocabData = [];
+
+    // 데이터 초기화 및 로드
+    function loadData() {
+        const stored = localStorage.getItem('vocabMasterData');
+        if (stored) {
+            vocabData = JSON.parse(stored);
+        } else {
+            const now = new Date().getTime();
+            vocabData = baseWordList.map(w => ({
+                ...w,
+                level: 1,
+                nextReview: now // 처음엔 모두 즉시 복습 대상
+            }));
+            saveData();
+        }
+        updateDashboard();
+    }
+
+    function saveData() {
+        localStorage.setItem('vocabMasterData', JSON.stringify(vocabData));
+        updateDashboard();
+    }
+
+    function resetData() {
+        if(confirm("모든 학습 기록(레벨, 날짜)을 초기화하시겠습니까?")) {
+            localStorage.removeItem('vocabMasterData');
+            loadData();
+            alert("초기화 되었습니다.");
+        }
+    }
+
+    // 대시보드 업데이트
+    function updateDashboard() {
+        let counts = { 1:0, 2:0, 3:0, 4:0, 5:0 };
+        let dueCount = 0;
+        const now = new Date().getTime();
+
+        vocabData.forEach(w => {
+            counts[w.level]++;
+            if (w.nextReview <= now) dueCount++;
+        });
+
+        for(let i=1; i<=5; i++) {
+            document.getElementById(`count-lv${i}`).textContent = counts[i];
+        }
+
+        const notice = document.getElementById('due-notice');
+        document.getElementById('due-count').textContent = dueCount;
+        if (dueCount > 0) {
+            notice.style.backgroundColor = '#ffeaa7';
+            notice.style.color = '#d35400';
+            notice.innerHTML = `오늘 복습해야 할 단어가 <strong>${dueCount}</strong>개 있습니다!`;
+        } else {
+            notice.style.backgroundColor = '#d4efdf';
+            notice.style.color = '#27ae60';
+            notice.innerHTML = `오늘의 복습을 모두 마쳤습니다! 🎉 (자유학습 가능)`;
+        }
+    }
+
+    // 공통 유틸
+    function showView(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+    }
+
+    function showMenu() {
+        updateDashboard();
+        showView('menu-view');
+    }
+
+    function shuffleArray(array) {
+        const arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    /* --- 1. 플래시카드 (자유학습 - 전체 단어) --- */
+    let fcIndex = 0;
+    function startFlashcards() {
+        fcIndex = 0;
+        document.querySelector('.flashcard').classList.remove('flipped');
+        updateFlashcard();
+        showView('flashcard-view');
+    }
+
+    function updateFlashcard() {
+        const word = vocabData[fcIndex];
+        document.getElementById('fc-word').textContent = word.en;
+        document.getElementById('fc-meaning').textContent = word.ko;
+        document.getElementById('fc-badge-front').textContent = `LV.${word.level}`;
+        document.getElementById('fc-badge-back').textContent = `LV.${word.level}`;
+        document.getElementById('fc-progress').textContent = `${fcIndex + 1} / ${vocabData.length}`;
+        document.querySelector('.flashcard').classList.remove('flipped');
+    }
+
+    function flipCard() { document.querySelector('.flashcard').classList.toggle('flipped'); }
+    function prevCard() { if (fcIndex > 0) { fcIndex--; updateFlashcard(); } }
+    function nextCard() { if (fcIndex < vocabData.length - 1) { fcIndex++; updateFlashcard(); } }
+
+    /* --- 2. 짝맞추기 게임 (자유복습 - 전체 단어) --- */
+    let matchRound = 0;
+    let selectedBtn = null;
+    let matchedCount = 0;
+    let shuffledMatchWords = [];
+
+    function startMatching() {
+        matchRound = 0;
+        shuffledMatchWords = shuffleArray(vocabData);
+        showView('match-view');
+        loadMatchRound();
+    }
+
+    function loadMatchRound() {
+        document.getElementById('match-next-btn').style.display = 'none';
+        matchedCount = 0;
+        selectedBtn = null;
+        
+        const roundWords = shuffledMatchWords.slice(matchRound * 5, (matchRound + 5));
+        if (roundWords.length === 0) {
+            alert("모든 단어 짝맞추기를 완료했습니다!");
+            showMenu();
+            return;
+        }
+
+        const buttonsData = [];
+        roundWords.forEach((w) => {
+            buttonsData.push({ text: w.en, type: 'en', id: w.id });
+            buttonsData.push({ text: w.ko, type: 'ko', id: w.id });
+        });
+
+        const shuffled = shuffleArray(buttonsData);
+        const grid = document.getElementById('match-grid');
+        grid.innerHTML = '';
+
+        shuffled.forEach(item => {
+            const btn = document.createElement('button');
+            btn.className = 'match-btn';
+            btn.textContent = item.text;
+            btn.dataset.type = item.type;
+            btn.dataset.id = item.id;
+            btn.onclick = () => handleMatchClick(btn);
+            grid.appendChild(btn);
+        });
+    }
+
+    function handleMatchClick(btn) {
+        if (btn.classList.contains('matched') || btn.classList.contains('selected')) return;
+
+        if (!selectedBtn) {
+            btn.classList.add('selected');
+            selectedBtn = btn;
+        } else {
+            if (selectedBtn.dataset.type !== btn.dataset.type && selectedBtn.dataset.id === btn.dataset.id) {
+                btn.classList.add('matched');
+                selectedBtn.classList.remove('selected');
+                selectedBtn.classList.add('matched');
+                selectedBtn = null;
+                matchedCount++;
+                
+                if (matchedCount === 5) {
+                    matchRound++;
+                    if (matchRound * 5 >= vocabData.length) {
+                        setTimeout(() => { alert("게임 클리어!"); showMenu(); }, 500);
+                    } else {
+                        document.getElementById('match-next-btn').style.display = 'block';
+                    }
+                }
+            } else {
+                btn.classList.add('selected');
+                setTimeout(() => {
+                    btn.classList.remove('selected');
+                    selectedBtn.classList.remove('selected');
+                    selectedBtn = null;
+                }, 400);
+            }
+        }
+    }
+    function nextMatchRound() { loadMatchRound(); }
+
+    /* --- 3. 오늘의 복습 테스트 (Spaced Practice Core) --- */
+    let testQueue = [];
+    let currentTestItem = null;
+    let errorCount = 0;
+
+    function startTest() {
+        const now = new Date().getTime();
+        // 큐 생성: 복습일이 지났거나 같은 단어들. { word: 단어객체, isRetry: 이번 세션에서 틀린적 있는지 }
+        const dueWords = vocabData.filter(w => w.nextReview <= now);
+        
+        if (dueWords.length === 0) {
+            alert("지금은 복습할 단어가 없습니다! 대시보드를 확인하거나 자유 학습을 이용해 보세요.");
+            return;
+        }
+
+        testQueue = shuffleArray(dueWords).map(w => ({ wordId: w.id, isRetry: false }));
+        document.getElementById('dynamic-notice').style.display = 'none';
+        loadNextTestWord();
+        showView('test-view');
+    }
+
+    function loadNextTestWord() {
+        if (testQueue.length === 0) {
+            saveData();
+            showView('result-view');
+            return;
+        }
+
+        currentTestItem = testQueue[0];
+        const wordObj = vocabData.find(w => w.id === currentTestItem.wordId);
+        
+        errorCount = 0;
+        const testInput = document.getElementById('test-input');
+        const testFeedback = document.getElementById('test-feedback');
+        
+        testInput.value = '';
+        testInput.disabled = false;
+        testFeedback.textContent = '';
+        testFeedback.className = 'feedback';
+        
+        document.getElementById('test-progress').textContent = `남은 단어: ${testQueue.length}개`;
+        document.getElementById('test-question').textContent = wordObj.ko;
+        
+        // 재도전 단어인 경우 알림 표시
+        document.getElementById('dynamic-notice').style.display = currentTestItem.isRetry ? 'block' : 'none';
+        
+        testInput.focus();
+    }
+
+    function handleTestEnter(event) {
+        if (event.key === 'Enter') checkAnswer();
+    }
+
+    function checkAnswer() {
+        const testInput = document.getElementById('test-input');
+        if (testInput.disabled) return;
+        
+        const wordDataIndex = vocabData.findIndex(w => w.id === currentTestItem.wordId);
+        const wordObj = vocabData[wordDataIndex];
+        const userAnswer = testInput.value.trim().toLowerCase();
+        const testFeedback = document.getElementById('test-feedback');
+
+        if (userAnswer === wordObj.en) {
+            // 정답 처리
+            testFeedback.textContent = "정답입니다!";
+            testFeedback.className = 'feedback correct-text';
+            testInput.disabled = true;
+            
+            // 데이터 업데이트 로직
+            if (!currentTestItem.isRetry && errorCount === 0) {
+                // 한 번에 맞췄을 때: 레벨업 (최대 5)
+                if (vocabData[wordDataIndex].level < 5) {
+                    vocabData[wordDataIndex].level += 1;
+                }
+            }
+            // (isRetry가 true이거나 오류가 있었지만 패스된 경우 레벨은 오르지 않음)
+            
+            // 다음 복습일 계산 (새로운 레벨 기준)
+            const newLevel = vocabData[wordDataIndex].level;
+            const daysToAdd = reviewIntervals[newLevel];
+            vocabData[wordDataIndex].nextReview = new Date().getTime() + (daysToAdd * 86400000);
+            
+            // 큐에서 제거
+            testQueue.shift();
+            saveData(); // 정답 맞출 때마다 실시간 저장
+
+            setTimeout(loadNextTestWord, 800);
+            
+        } else {
+            // 오답 처리
+            errorCount++;
+            
+            if (errorCount === 1) {
+                // 1회 오류: 힌트 제공
+                let hintStr = wordObj.en[0] + " ";
+                for (let i = 1; i < wordObj.en.length; i++) hintStr += "_ ";
+                
+                testFeedback.textContent = `힌트: ${hintStr} (${wordObj.en.length}글자)`;
+                testFeedback.className = 'feedback hint-text';
+                testInput.value = '';
+                testInput.focus();
+            } else if (errorCount >= 2) {
+                // 2회 오류: 정답 공개, 레벨 강등, 동적 큐 뒤로 삽입
+                testFeedback.textContent = `정답은 '${wordObj.en}' 입니다.`;
+                testFeedback.className = 'feedback wrong-text';
+                testInput.value = wordObj.en;
+                testInput.disabled = true;
+                
+                // 데이터 강등 (LV 1로 리셋)
+                vocabData[wordDataIndex].level = 1;
+                // 복습일은 큐를 통과할 때까지 갱신하지 않음
+                
+                // 동적 큐 처리: 현재 단어를 빼고 3~4번째 뒤로 다시 넣음
+                const failedItem = testQueue.shift();
+                failedItem.isRetry = true; // 재도전 꼬리표 붙임
+                
+                // 남은 큐의 길이 중 최대 3번째 인덱스 위치에 삽입 (짧으면 맨 뒤로)
+                const insertIndex = Math.min(testQueue.length, 3);
+                testQueue.splice(insertIndex, 0, failedItem);
+                
+                setTimeout(loadNextTestWord, 1500);
+            }
+        }
+    }
+
+    // 초기 실행
+    window.onload = loadData;
+
+</script>
+</body>
+</html>
